@@ -114,6 +114,8 @@ fi
 # ### The Cache
 mkdir -p $CACHE_DIR
 
+# Create set-aside `.heroku` folder.
+mkdir -p .heroku
 
 # Nice defaults.
 LEGACY_VIRTUALENV=false
@@ -147,12 +149,32 @@ set +e
 mkdir .heroku &> /dev/null
 HEROKU_DIR_STATUS=$?
 
+# Install SWIG
+if [ ! -d $CACHE_DIR/swig ]; then
+  cd $BUILD_DIR
+  echo "-----> Fetching and installing SWIG 2"
+  curl -O https://s3.amazonaws.com/guybowden/swig.tar.gz >/dev/null 2>&1
+  echo "-----> Installing ..."
+  tar xzvf swig.tar.gz >/dev/null 2>&1
+  mv swig $CACHE_DIR/swig
+  rm swig.tar.gz
+  echo "SWIG installed" | indent
+fi
 # TODO: This is a new app, disable injection.
 # [ $HEROKU_DIR_STATUS -eq 0 ] && {
   #TODO: touch .heroku/injection_disabled
 # }
 set -e
 
+mkdir -p .paybox
+cp -R $CACHE_DIR/swig .paybox
+
+echo "updating path..." | indent
+PATH=$PATH:$BUILD_DIR/.paybox/swig/bin/
+export PATH
+echo $PATH | indent
+echo "setting SWIG_LIB environment var"
+export SWIG_LIB=$BUILD_DIR/.paybox/swig/share/swig/2.0.5/
 # Buildpack profile init script
 mkdir -p $(dirname $PROFILE_PATH)
 
